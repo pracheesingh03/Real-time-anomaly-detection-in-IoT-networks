@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Real-time Anomaly Detection</title>
+    <style>
+        /* Styles remain similar to previous code */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h2 {
+            text-align: center;
+        }
+        #counts {
+            text-align: center;
+            font-size: 30px;
+            margin-bottom: 10px;
+            color: red;
+        }
+        #error-message {
+            color: red;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 12px;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f4;
+            cursor: pointer;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .pagination button {
+            margin: 0 5px;
+            padding: 8px 16px;
+            cursor: pointer;
+            background-color: #ddd;
+            color: black;
+            border: none;
+            border-radius: 4px;
+        }
+        .pagination button.active {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        .pagination button:disabled {
+            background-color: #f0f0f0;
+            cursor: not-allowed;
+        }
+        .pagination button:hover:not(.active):not(:disabled) {
+            background-color: #bbb;
+        }
+        th.sortable:hover {
+            background-color: #e0e0e0;
+        }
+        .sort-arrow {
+            font-size: 12px;
+            margin-left: 8px;
+        }
+    </style>
+    <script>
+        let currentPage = 1;
+        const rowsPerPage = 15;
+        let fetchedData = [];
+        let sortOrder = 'asc';
+        const dataFetchInterval = 10000; // Fetch data every 10 seconds
+
+        // Variables to keep track of counts
+        let totalRecords = 0;
+        let totalAttacks = 0;
+
+        // Fetch data and replace existing data
+        async function fetchData() {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = '';
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/data');
+                if (!response.ok) throw new Error('Failed to fetch data');
+
+                let data = await response.json();
+
+                // Assign sensor_id to each data object
+                data = data.map((row, index) => ({ ...row, sensor_id: index + 1 }));
+
+                // Replace fetchedData with new data
+                fetchedData = data;
+
+                // Update counts
+                totalRecords = fetchedData.length;
+                totalAttacks = fetchedData.filter(row => row.prediction === 'Attack').length;
+
+                // Update counts in the frontend
+                updateCounts();
+
+                // Store fetchedData in localStorage
+                localStorage.setItem('fetchedData', JSON.stringify(fetchedData));
+
+                // Sort the data if sorting has been applied
+                if (sortOrder) {
+                    sortTableBySensorID(false); // false indicates not to toggle sortOrder
+                }
+
+                // Re-render table to include new data
+                renderTable();
+
+            } catch (error) {
+                errorMessage.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        function updateCounts() {
+            const countsDiv = document.getElementById('counts');
+            countsDiv.textContent = `Attacks: ${totalAttacks} / ${totalRecords}`;
+        }
+
+        function renderTable() {
+            const tableBody = document.getElementById('data-table-body');
+
+            // If there's no data, don't attempt to render the table
+            if (fetchedData.length === 0) return;
+
+            const totalPages = Math.ceil(fetchedData.length / rowsPerPage);
+
+            // Adjust currentPage if it exceeds totalPages
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+                localStorage.setItem('currentPage', currentPage);
+            }
+
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const pageData = fetchedData.slice(start, end);
+
+            tableBody.innerHTML = '';
+
+            pageData.forEach(row => {
+                const tr = document.createElement('tr');
+
+                // Create table cells
+                tr.innerHTML = `
+                    <td>${row.sensor_id}</td>
+                    <td>${row.flgs}</td>
+                    <td>${row.proto}</td>
+                    <td>${row.pkts}</td>
+                    <td>${row.bytes}</td>
+                    <td>${row.dur}</td>
+                    <td>${row.mean}</td>
+                    <td>${row.stddev}</td>
+                    <td>${row.sum}</td>
+                    <td>${row.min}</td>
+                    <td>${row.max}</td>
+                    <td>${row.rate}</td>
+                `;
+
+                // Create the "Prediction" cell with conditional styling
+                const predictionCell = document.createElement('td');
+                predictionCell.textContent = row.prediction;
+
+                // Apply background color if the prediction is "Attack"
+                if (row.prediction === 'Attack') {
+                    predictionCell.style.backgroundColor = '#ff4d4d'; // Red background for attacks
+                    predictionCell.style.color = 'white'; // White text for contrast
+                    predictionCell.style.fontWeight = 'bold'; // Bold text for emphasis
+                }
+
+                tr.appendChild(predictionCell);
+                tableBody.appendChild(tr);
+            });
+
+            renderPagination(totalPages);
+        }
+
+        function renderPagination(totalPages) {
+            const paginationContainer = document.getElementById('pagination');
+            paginationContainer.innerHTML = '';
+
+            // Create First and Previous buttons
+            paginationContainer.appendChild(createButton('← First', () => goToPage(1), currentPage === 1));
+            paginationContainer.appendChild(createButton('← Prev', () => goToPage(currentPage - 1), currentPage === 1));
+
+            // Generate page numbers with ellipsis
+            const pageNumbers = getPageNumbers(totalPages);
+            pageNumbers.forEach(page => {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = page;
+
+                if (page === currentPage) {
+                    pageButton.classList.add('active');
+                }
+                if (page !== '...') {
+                    pageButton.onclick = () => goToPage(page);
+                } else {
+                    pageButton.disabled = true; // Disable "..." buttons
+                }
+
+                paginationContainer.appendChild(pageButton);
+            });
+
+            // Create Next and Last buttons
+            paginationContainer.appendChild(createButton('Next →', () => goToPage(currentPage + 1), currentPage === totalPages));
+            paginationContainer.appendChild(createButton('Last →', () => goToPage(totalPages), currentPage === totalPages));
+        }
+
+        function createButton(text, onClick, disabled = false) {
+            const button = document.createElement('button');
+            button.textContent = text;
+            button.onclick = onClick;
+            button.disabled = disabled;
+            return button;
+        }
+
+        function getPageNumbers(totalPages) {
+            const pages = [];
+            const maxPagesToShow = 5;
+
+            if (totalPages <= 10) {
+                for (let i = 1; i <= totalPages; i++) pages.push(i);
+            } else {
+                if (currentPage <= 3) {
+                    for (let i = 1; i <= 4; i++) pages.push(i);
+                    pages.push('...');
+                    pages.push(totalPages);
+                } else if (currentPage > 3 && currentPage < totalPages - 2) {
+                    pages.push(1);
+                    pages.push('...');
+                    for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+                    pages.push('...');
+                    pages.push(totalPages);
+                } else {
+                    pages.push(1);
+                    pages.push('...');
+                    for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+                }
+            }
+            return pages;
+        }
+
+        function sortTableBySensorID(toggleSortOrder = true) {
+            const sortArrow = document.getElementById('sort-arrow');
+
+            // Toggle the sortOrder and update the arrow icon if needed
+            if (toggleSortOrder) {
+                sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+                localStorage.setItem('sortOrder', sortOrder);
+            }
+            sortArrow.textContent = sortOrder === 'asc' ? '↑' : '↓';
+
+            // Sort the data based on the sortOrder
+            fetchedData.sort((a, b) => {
+                if (sortOrder === 'asc') {
+                    return a.sensor_id - b.sensor_id;
+                } else {
+                    return b.sensor_id - a.sensor_id;
+                }
+            });
+
+            renderTable();
+        }
+
+        function goToPage(page) {
+            const totalPages = Math.ceil(fetchedData.length / rowsPerPage);
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                localStorage.setItem('currentPage', currentPage);
+                renderTable();
+            }
+        }
+
+        window.onload = async function() {
+            // Load sort order from localStorage if available
+            const storedSortOrder = localStorage.getItem('sortOrder');
+            if (storedSortOrder) {
+                sortOrder = storedSortOrder;
+            }
+
+            // Load current page from localStorage if available
+            const storedPage = localStorage.getItem('currentPage');
+            if (storedPage) {
+                currentPage = parseInt(storedPage, 10);
+            }
+
+            // Set the sort arrow based on stored sort order
+            const sortArrow = document.getElementById('sort-arrow');
+            sortArrow.textContent = sortOrder === 'asc' ? '↑' : '↓';
+
+            await fetchData(); // Fetch new data
+
+            // Set interval to fetch new data periodically
+            setInterval(fetchData, dataFetchInterval); // Fetch data every 10 seconds
+        };
+    </script>
+</head>
+<body>
+    <h2>Real-time IoT Anomaly Detection Dashboard</h2>
+    <div><h3 id="counts">Attacks: 0 / 0</h3></div>  <!-- Display counts here -->
+    <div id="error-message"></div>
+    <table>
+        <thead>
+            <tr>
+                <th class="sortable" onclick="sortTableBySensorID()">
+                    Sensor ID <span id="sort-arrow"></span>
+                </th>
+                <th>Flgs</th>
+                <th>Proto</th>
+                <th>Pkts</th>
+                <th>Bytes</th>
+                <th>Dur</th>
+                <th>Mean</th>
+                <th>Stddev</th>
+                <th>Sum</th>
+                <th>Min</th>
+                <th>Max</th>
+                <th>Rate</th>
+                <th>Prediction</th>
+            </tr>
+        </thead>
+        <tbody id="data-table-body"></tbody>
+    </table>
+
+    <div class="pagination" id="pagination"></div>
+</body>
+</html>
