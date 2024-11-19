@@ -6,7 +6,7 @@ The exponential growth of IoT devices necessitates efficient and scalable real-t
 Objective
 To implement and compare various machine learning models for real-time anomaly detection in IoT networks using the Hadoop-Spark framework. 
 
-Tasks
+**Tasks**
 
 ● Dataset Preparation
 
@@ -30,7 +30,7 @@ Tasks
 
 ○ Pipeline Development: Develop a scalable pipeline for data preprocessing, model training, and real-time anomaly detection.
 
-Deliverables
+**Deliverables**
 
 IoT Anomaly Detection Model:
 
