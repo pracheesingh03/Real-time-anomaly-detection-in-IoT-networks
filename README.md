@@ -11,6 +11,7 @@ Tasks
 ● Dataset Preparation
 
 ○ Dataset: Use the BoT-IoT dataset, which includes various types of normal and attack traffic.
+
 ○ Data Exploration: Analyze and preprocess the dataset to understand its structure and features.
 
 ● Data Augmentation
@@ -20,11 +21,13 @@ Tasks
 ● Model Development
 
 ○ Machine Learning Models: Implement and compare multiple machine learning algorithms such as Random Forest, Decision Trees, Naive Bayes, Logistic Regression, SVM with One-vs-Rest, and Gradient Boosted Trees.
+
 ○ Evaluation Metrics: Use F1-score and other relevant metrics to assess model performance.
 
 ● Big Data Framework
 
 ○ Hadoop-Spark Integration: Utilize Hadoop-Kafka for distributed processing and real-time anomaly detection.
+
 ○ Pipeline Development: Develop a scalable pipeline for data preprocessing, model training, and real-time anomaly detection.
 
 Deliverables
@@ -41,6 +44,7 @@ alert systems for real-time monitoring.
 Performance Reports and Documentation:
 
 ● A detailed report including the system architecture, data flow, performance metrics (e.g., latency, accuracy, false positive rate), and scalability testing.
+
 ● Comprehensive technical documentation for deployment, configuration, and system usage.
 
 Source Code and Scripts:
