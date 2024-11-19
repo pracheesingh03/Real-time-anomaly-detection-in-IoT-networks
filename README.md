@@ -27,20 +27,27 @@ Tasks
 ○ Hadoop-Spark Integration: Utilize Hadoop-Kafka for distributed processing and real-time anomaly detection.
 ○ Pipeline Development: Develop a scalable pipeline for data preprocessing, model training, and real-time anomaly detection.
 
-Deliverables￾IoT Anomaly Detection Model:
+Deliverables
+
+IoT Anomaly Detection Model:
+
 ● A trained and scalable machine learning model based on methods like Random Forest, K-Means Clustering, or Autoencoders that can classify events as anomalous or non-anomalous in real-time.
 
 Real-Time Dashboard for Monitoring:
+
 ● A web-based dashboard to display the system’s real-time status, incoming data streams, and flagged anomalous events including Visualizations in form of graphs, tables, and
 alert systems for real-time monitoring.
 
 Performance Reports and Documentation:
+
 ● A detailed report including the system architecture, data flow, performance metrics (e.g., latency, accuracy, false positive rate), and scalability testing.
 ● Comprehensive technical documentation for deployment, configuration, and system usage.
 
 Source Code and Scripts:
+
 ● A GitHub repository containing all source code, deployment scripts, and instructions for setting up the system.
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------
 Reference paper - https://www.mdpi.com/1424-8220/22/20/7726
+
 Dataset Link - https://www.kaggle.com/datasets/vigneshvenkateswaran/bot-iot
